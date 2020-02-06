@@ -6,6 +6,7 @@ import store_manifold_info
 from scipy.linalg import svd
 import numpy as np
 import transformation_operators
+import reflections_operator
 
 # Что подправить:
 # 1. Наименование find_transformation_operator, т.к. функция возвращает промежуточный оператор (с.в. которого образуют нужную ортогональную матрицу перехода)
@@ -18,17 +19,41 @@ import transformation_operators
 # get_point_hash(point) - согласован с store_point_info, необходим для того, чтобы получить оператор по ключу
 
 
-# Класс для хранения информации об отражениях (в статье обозначается как Z - n \times n оператор из определителей матриц перехода)
-class reflections_operator:
-    def __init__(self, tr_operators):
-        self.tr_operators = tr_operators
-        self.operator = [[0 for i in range(len(tr_operators.transformation_operators))] for j in range(len(tr_operators.transformation_operators))]
+# Оператор D из статьи
+# in: square_operator - квадратный оператор
+# out: диагональный оператор, на i-й диагонали которого число ненулевых элементов в i-й строке исходного оператора
 
-    def initialize_reflections_operator(self):
-        for first_operator_pos in range(len(self.tr_operators.transformation_operators)):
-            for second_operator_pos in range(len(self.tr_operators.transformation_operators)):
-                self.operator[first_operator_pos][second_operator_pos] = np.linalg.det(self.tr_operators.transformation_operators[first_operator_pos][second_operator_pos])
+# Методы нового класса Matrix
+def calculate_diagonal_with_nonzeros_in_row(square_operator):
+    diag = [len(np.nonzero(x)[0]) for x in square_operator] # Вычисляем значения диагональных элементов
+    return np.diag(diag) # Возвращаем диагональный оператор, на i диагонали которого - число ненулевых элементов в i-й строке оператора square_operator
 
+# Возможно тоже должен быть методом класса Matrix 
+def calculate_normalize_reflections_operator(reflections_operator, diagonal_operator):
+    return np.matmul(np.linalg.inv(diagonal_operator), reflections_operator)
+
+# Метод Matrix
+# Необходим для поиска макс с.з. и соотв. ему с.в. из алгоритма (2.3 Syncronization)
+def find_max_eigenvalue_with_its_vector(operator):
+    w, v = np.linalg.eig(operator)
+    max_eigenvalue_pos = ind_of_max_element(w)
+    return w[max_eigenvalue_pos], v[max_eigenvalue_pos]
+
+def ind_of_max_element(tList):
+    maxElem = tList[0]
+    ind = 0
+    for i in range(len(tList)):
+        if (tList[i] > maxElem):
+            maxElem = tList[i]
+            ind = i
+    return ind
+
+# in: top eigenvector
+# Метод для расчета z_i (их оценок, вообще говоря)
+# В статье шаг 7
+def calculate_reflections_array(tList):
+    tList
+    return np.sign(tList)
 
 # ====
 # Тестовые данные
@@ -36,8 +61,11 @@ class reflections_operator:
 
 mean = [0, 0, 0]
 cov = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+print("Введите число точек")
 n = int(input())
+print("Введите число ближайших соседей, которые используем в алгоритме")
 k = int(input())
+print("Введите предполагаемую размерность многообразия, на котором лежат точки")
 d = int(input())
 
 point = generate_point_on_sphere.Points(mean, cov, n)
@@ -50,13 +78,22 @@ mn_info.initialize_orthonormal_operators()
 # Проверка корректности части кода
 # ====
 
-transformation_operators = transformation_operators.transformation_matrices_between_near_point(mn_info)
+print("Введите расстояние, которое считается _близким_ для двух точек")
+close_distance = float(input()) # расстояние, которое мы считаем близким (для рассчета операторов перехода между близкими точками)
+transformation_operators = transformation_operators.transformation_matrices_between_near_point(mn_info, close_distance)
 transformation_operators.initialize_transformation_operators()
 
-reflection_operator = reflections_operator(transformation_operators)
-reflection_operator.initialize_reflections_operator()
+reflections_operator = reflections_operator.reflections_operator(transformation_operators)
+reflections_operator.initialize_reflections_operator()
 
-print(reflection_operator.operator)
+diagonal_operator = calculate_diagonal_with_nonzeros_in_row(reflections_operator.operator) # Инициализируем диагональный оператор
+normalize_reflections_operator = calculate_normalize_reflections_operator(reflections_operator.operator, diagonal_operator)
+
+# eiv - eigen value
+# eig - eigen vector
+eiv, eig = find_max_eigenvalue_with_its_vector(normalize_reflections_operator)
+
+print(calculate_reflections_array(eig))
 
 # for key in mn_info.manifold_info.keys():
     # print("====")

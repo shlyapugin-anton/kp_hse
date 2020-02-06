@@ -31,13 +31,6 @@ class store_manifold_info:
             point_info.get_coordinates_hashed()
 
             self.manifold_info[point_info.coordinates_hashed] = point_info # Заполняем словарь с информацией о многобразии в каждой точке
-            # ===
-            # print("---")
-            # print(self.set_of_points[point_pos])
-            # print(point_info.coordinates_string)
-            # print(point_info.coordinates_hashed)
-            # print("---")
-            # ===
 
     def return_point_by_its_coordinates(self, coordinates):
         point_info = store_point_info.store_point_info(coordinates, [])

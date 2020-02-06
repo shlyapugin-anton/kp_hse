@@ -12,16 +12,15 @@ import numpy as np
 # инстанс store_manifold_info - хранящий информацию о многообразии 
 # Сейчас класс может построить только матрицы O_ii
 # Впоследствии подправлю для находления 
+# close_distance - параметр для определения близости точек
 class transformation_matrices_between_near_point:
-    def __init__(self, store_mn_info):
-        self.mn_info = store_mn_info
+    def __init__(self, store_mn_info, close_distance):
+        self.mn_info = store_mn_info # class store_manifold_info
+        self.close_distance = close_distance # какое расстояние мы считаем "близким" для тчоек
         # Инициализируем список с операторами перехода
-        self.transformation_operators = [[0 for i in range(len(store_mn_info.set_of_points))] for j in range(len(store_mn_info.set_of_points))]
+        self.transformation_operators = [[0 for i in range(len(store_mn_info.set_of_points))] for j in range(len(store_mn_info.set_of_points))] # матрица с операторами перехода
     
     def initialize_transformation_operators(self):
-        # При доработке нужно будет добавить второй цикл по тем же точкам
-        # Можно прямо сейчас добавить цикл и проверять расстояние между точками и уже строить операторы,
-        # Но мне совершенно не нравится сложность вычислений, кажется можно сделать сильно эффективнее
         for point_pos in range(len(self.mn_info.set_of_points)):
             # Получить точку в этой позиции
             # Получить ее хеш
@@ -29,10 +28,12 @@ class transformation_matrices_between_near_point:
             # Помноить транспонированный оператор и обычный
             # Применить svd
             # Перемножить 2 оператора из svd (это и будет оператором перехода)
+            first_point = store_point_info.store_point_info(self.mn_info.set_of_points[point_pos], '') # преобразуем nd_array к экземпляру класса store_point_info
             for second_point_pos in range(len(self.mn_info.set_of_points)):
+                second_point = store_point_info.store_point_info(self.mn_info.set_of_points[second_point_pos], '')
                 # ===
                 # Инициализация первого оператора
-                if (True): # Переопределить, тут должно быть вычисление "близости" точек и в зависимости от этого определяем матрицы перехода
+                if (first_point.distance_between_point(second_point) < self.close_distance): # НЕ ПРОТЕСТИРОВАНО
                     point = self.mn_info.set_of_points[point_pos]
                     point_for_hash = store_point_info.store_point_info(point, '')
                     point_for_hash.get_coordinates_hashed()
@@ -55,7 +56,7 @@ class transformation_matrices_between_near_point:
                     # Конец инициализации второго оператора
                     # ===
 
-                    almost_O_ij = np.matmul(first_operator.T, second_operator)
+                    almost_O_ij = np.matmul(first_operator, second_operator.T)
 
                     U, s, vt = svd(almost_O_ij)
 
