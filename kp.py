@@ -7,6 +7,8 @@ from scipy.linalg import svd
 import numpy as np
 import transformation_operators
 import reflections_operator
+import os
+import seaborn as sns
 
 # Что подправить:
 # 1. Наименование find_transformation_operator, т.к. функция возвращает промежуточный оператор (с.в. которого образуют нужную ортогональную матрицу перехода)
@@ -55,12 +57,18 @@ def calculate_reflections_array(tList):
     tList
     return np.sign(tList)
 
+def symmetrization(operator):
+    print(operator + np.transpose(operator))
+    return 1
+
 # ====
 # Тестовые данные
 # ====
 
 mean = [0, 0, 0]
 cov = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+# seed для генерации точек
+seed = 0
 print("Введите число точек")
 n = int(input())
 print("Введите число ближайших соседей, которые используем в алгоритме")
@@ -68,7 +76,7 @@ k = int(input())
 print("Введите предполагаемую размерность многообразия, на котором лежат точки")
 d = int(input())
 
-point = generate_point_on_sphere.Points(mean, cov, n)
+point = generate_point_on_sphere.Points(mean, cov, n, seed)
 point.normalize_points_set()
 
 mn_info = store_manifold_info.store_manifold_info(point.points, k, d)
@@ -89,17 +97,17 @@ reflections_operator.initialize_reflections_operator()
 diagonal_operator = calculate_diagonal_with_nonzeros_in_row(reflections_operator.operator) # Инициализируем диагональный оператор
 normalize_reflections_operator = calculate_normalize_reflections_operator(reflections_operator.operator, diagonal_operator)
 
+# result_operator = symm
+
 # eiv - eigen value
 # eig - eigen vector
 eiv, eig = find_max_eigenvalue_with_its_vector(normalize_reflections_operator)
 
-print(calculate_reflections_array(eig))
+svm = sns.distplot(eig)
 
-# for key in mn_info.manifold_info.keys():
-    # print("====")
-    # print("operator in value = " + str(mn_info.manifold_info[key].operator))
-    # U, s, vt = svd(mn_info.manifold_info[key].operator)
-    # print("U = " + str(U))
-    # print("s = " + str(s))
-    # print("vt = " + str(vt))
-    # print("====")
+figure = svm.get_figure()
+figure.savefig('svm.png', dpi=400)
+
+# f = open("result.txt", "w")
+# f.write(str(eig))
+# f.close()

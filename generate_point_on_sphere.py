@@ -2,10 +2,11 @@ import numpy as np
 
 
 class Points:
-    def __init__(self, mean, cov, n):
+    def __init__(self, mean, cov, n, seed):
         self.n = n
         self.mean = mean
         self.cov = cov
+        np.random.seed(seed);
         self.points = np.random.multivariate_normal(self.mean, self.cov, self.n)
 
     def find_length(self, point):
