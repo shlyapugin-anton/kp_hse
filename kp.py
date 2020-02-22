@@ -9,6 +9,7 @@ import transformation_operators
 import reflections_operator
 import os
 import seaborn as sns
+import time
 
 # Что подправить:
 # 1. Наименование find_transformation_operator, т.к. функция возвращает промежуточный оператор (с.в. которого образуют нужную ортогональную матрицу перехода)
@@ -76,11 +77,19 @@ k = int(input())
 print("Введите предполагаемую размерность многообразия, на котором лежат точки")
 d = int(input())
 
+start_time = time.time()
+
 point = generate_point_on_sphere.Points(mean, cov, n, seed)
 point.normalize_points_set()
 
+generated_point_time = time.time()
+print("генерация точек и их нормализация заняла времени: " + str((generated_point_time - start_time)))
+
 mn_info = store_manifold_info.store_manifold_info(point.points, k, d)
 mn_info.initialize_orthonormal_operators()
+
+mn_info_init_time = time.time()
+print("инициализация mn_info заняла времени: " + str((mn_info_init_time - generated_point_time)))
 
 # ====
 # Проверка корректности части кода
@@ -88,20 +97,42 @@ mn_info.initialize_orthonormal_operators()
 
 print("Введите расстояние, которое считается _близким_ для двух точек")
 close_distance = float(input()) # расстояние, которое мы считаем близким (для рассчета операторов перехода между близкими точками)
+
+start_time = time.time()
+
 transformation_operators = transformation_operators.transformation_matrices_between_near_point(mn_info, close_distance)
+
+calculate_transformation_operators_time = time.time() 
+print("генерация операторов перехода: " + str((calculate_transformation_operators_time - start_time)))
+
 transformation_operators.initialize_transformation_operators()
+
+tr_oper_init_time = time.time()
+print("инициализация операторов перехода: " + str(tr_oper_init_time - start_time))
 
 reflections_operator = reflections_operator.reflections_operator(transformation_operators)
 reflections_operator.initialize_reflections_operator()
 
+initialize_ref_operators_time = time.time()
+print("генерация операторов отображения заняло времени: " + str((initialize_ref_operators_time - tr_oper_init_time)))
+
 diagonal_operator = calculate_diagonal_with_nonzeros_in_row(reflections_operator.operator) # Инициализируем диагональный оператор
 normalize_reflections_operator = calculate_normalize_reflections_operator(reflections_operator.operator, diagonal_operator)
+
+normalize_reflections_operator_time = time.time()
+print("нормализация операторов заняло времени: " + str((normalize_reflections_operator_time - initialize_ref_operators_time)))
 
 # result_operator = symm
 
 # eiv - eigen value
 # eig - eigen vector
 eiv, eig = find_max_eigenvalue_with_its_vector(normalize_reflections_operator)
+
+for num in eig:
+    if (num.imag > 10 ** (-12)):
+        print("где-то косяк в расчетах, слишком большое комплексное число в с.в.")
+        print(num.imag)
+eig = eig.real
 
 svm = sns.distplot(eig)
 

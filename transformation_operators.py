@@ -29,30 +29,32 @@ class transformation_matrices_between_near_point:
             # Применить svd
             # Перемножить 2 оператора из svd (это и будет оператором перехода)
             first_point = store_point_info.store_point_info(self.mn_info.set_of_points[point_pos], '') # преобразуем nd_array к экземпляру класса store_point_info
+            first_point_hash = self.mn_info.pos_key_map[point_pos]
             for second_point_pos in range(len(self.mn_info.set_of_points)):
                 second_point = store_point_info.store_point_info(self.mn_info.set_of_points[second_point_pos], '')
                 # ===
                 # Инициализация первого оператора
                 if (first_point.distance_between_point(second_point) < self.close_distance): # НЕ ПРОТЕСТИРОВАНО
-                    point = self.mn_info.set_of_points[point_pos]
-                    point_for_hash = store_point_info.store_point_info(point, '')
-                    point_for_hash.get_coordinates_hashed()
+ #                   point = self.mn_info.set_of_points[point_pos]
+ #                   point_for_hash = store_point_info.store_point_info(point, '')
+  #                  point_for_hash.get_coordinates_hashed()
 
-                    key = point_for_hash.coordinates_hashed
+#                    key = point_for_hash.coordinates_hashed
 
-                    first_operator = self.mn_info.manifold_info[key].operator
+                    first_operator = self.mn_info.manifold_info[first_point_hash].operator
                     # Конец инициализации первого оператора (такие блоки говорят о том, что store_manifold_info подготовлен плохо. Там нужен метод, позволяющий вытягивать оператор по списку точек)
                     # ===
 
                     # Инициализация второго оператора
                     # ===
-                    point = self.mn_info.set_of_points[second_point_pos]
-                    point_for_hash = store_point_info.store_point_info(point, '')
-                    point_for_hash.get_coordinates_hashed()
+                    second_point_hash = self.mn_info.pos_key_map[second_point_pos]
+  #                  point = self.mn_info.set_of_points[second_point_pos]
+   #                 point_for_hash = store_point_info.store_point_info(point, '')
+    #                point_for_hash.get_coordinates_hashed()
 
-                    key = point_for_hash.coordinates_hashed
+ #                   key = point_for_hash.coordinates_hashed
 
-                    second_operator = self.mn_info.manifold_info[key].operator
+                    second_operator = self.mn_info.manifold_info[second_point_hash].operator
                     # Конец инициализации второго оператора
                     # ===
 

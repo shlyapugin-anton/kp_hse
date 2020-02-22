@@ -20,6 +20,8 @@ class store_manifold_info:
         # Структура и смысл описан в комментариях к классу
         self.manifold_info = {}
 
+        self.pos_key_map = {} # Словарь, ключ - позиция точки, значение - хеш этой точки
+
     def initialize_orthonormal_operators(self):
         
         for point_pos in range(len(self.set_of_points)):
@@ -29,6 +31,8 @@ class store_manifold_info:
             point_info = store_point_info.store_point_info(self.set_of_points[point_pos], local_pca.pca.operator) # Структура данных для хранения информации о точке
 
             point_info.get_coordinates_hashed()
+
+            self.pos_key_map[point_pos] = point_info.coordinates_hashed
 
             self.manifold_info[point_info.coordinates_hashed] = point_info # Заполняем словарь с информацией о многобразии в каждой точке
 
