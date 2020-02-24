@@ -7,7 +7,8 @@ class Points:
         self.mean = mean
         self.cov = cov
         np.random.seed(seed);
-        self.points = np.random.multivariate_normal(self.mean, self.cov, self.n)
+#        self.points = np.random.multivariate_normal(self.mean, self.cov, self.n) # для нормального
+        self.points = np.random.uniform(low=-1, high=1, size=(self.n, 3)) # для равномерного распределения
 
     def find_length(self, point):
         length = 0

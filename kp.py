@@ -10,6 +10,7 @@ import reflections_operator
 import os
 import seaborn as sns
 import time
+from unidip import UniDip
 
 # Что подправить:
 # 1. Наименование find_transformation_operator, т.к. функция возвращает промежуточный оператор (с.в. которого образуют нужную ортогональную матрицу перехода)
@@ -133,6 +134,14 @@ for num in eig:
         print("где-то косяк в расчетах, слишком большое комплексное число в с.в.")
         print(num.imag)
 eig = eig.real
+
+intervals = UniDip(eig).run()
+# print(type(intervals))
+# print(intervals)
+if (len(intervals) > 2):
+    print("Не ориентируемо")
+else: 
+    print("Ориентируемо")
 
 svm = sns.distplot(eig)
 
