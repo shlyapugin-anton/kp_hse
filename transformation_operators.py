@@ -34,13 +34,7 @@ class transformation_matrices_between_near_point:
                 second_point = store_point_info.store_point_info(self.mn_info.set_of_points[second_point_pos], '')
                 # ===
                 # Инициализация первого оператора
-                if (first_point.distance_between_point(second_point) < self.close_distance): # НЕ ПРОТЕСТИРОВАНО
- #                   point = self.mn_info.set_of_points[point_pos]
- #                   point_for_hash = store_point_info.store_point_info(point, '')
-  #                  point_for_hash.get_coordinates_hashed()
-
-#                    key = point_for_hash.coordinates_hashed
-
+                if (first_point.distance_between_point(second_point) < self.close_distance):
                     first_operator = self.mn_info.manifold_info[first_point_hash].operator
                     # Конец инициализации первого оператора (такие блоки говорят о том, что store_manifold_info подготовлен плохо. Там нужен метод, позволяющий вытягивать оператор по списку точек)
                     # ===
@@ -48,17 +42,12 @@ class transformation_matrices_between_near_point:
                     # Инициализация второго оператора
                     # ===
                     second_point_hash = self.mn_info.pos_key_map[second_point_pos]
-  #                  point = self.mn_info.set_of_points[second_point_pos]
-   #                 point_for_hash = store_point_info.store_point_info(point, '')
-    #                point_for_hash.get_coordinates_hashed()
-
- #                   key = point_for_hash.coordinates_hashed
 
                     second_operator = self.mn_info.manifold_info[second_point_hash].operator
                     # Конец инициализации второго оператора
                     # ===
 
-                    almost_O_ij = np.matmul(first_operator, second_operator.T)
+                    almost_O_ij = np.matmul(first_operator.T, second_operator) # Не на правильном операторе взята транспозиция
 
                     U, s, vt = svd(almost_O_ij)
 

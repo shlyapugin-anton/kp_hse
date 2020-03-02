@@ -25,6 +25,7 @@ class apply_pca:
     def calculate_eigenvectors(self):
         w, v = np.linalg.eig(self.operator)
         self.operator = v[:self.dim]
+        self.operator = self.operator.T
 
     def create_orthogonal_matrix_on_nearest_points(self):
         self.centralize_data()

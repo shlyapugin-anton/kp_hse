@@ -41,6 +41,11 @@ def calculate_normalize_reflections_operator(reflections_operator, diagonal_oper
 def find_max_eigenvalue_with_its_vector(operator):
     w, v = np.linalg.eig(operator)
     max_eigenvalue_pos = ind_of_max_element(w)
+    test = w
+    test.sort()
+    print("===")
+    print(test)
+    print("===")
     return w[max_eigenvalue_pos], v[max_eigenvalue_pos]
 
 def ind_of_max_element(tList):
@@ -129,10 +134,10 @@ print("нормализация операторов заняло времени
 # eig - eigen vector
 eiv, eig = find_max_eigenvalue_with_its_vector(normalize_reflections_operator)
 
-for num in eig:
-    if (num.imag > 10 ** (-12)):
-        print("где-то косяк в расчетах, слишком большое комплексное число в с.в.")
-        print(num.imag)
+# for num in eig:
+#    if (num.imag > 10 ** (-12)):
+#        print("где-то косяк в расчетах, слишком большое комплексное число в с.в.")
+#        print(num.imag)
 eig = eig.real
 
 intervals = UniDip(eig).run()
@@ -146,7 +151,7 @@ else:
 svm = sns.distplot(eig)
 
 figure = svm.get_figure()
-figure.savefig('svm.png', dpi=400)
+figure.savefig('svm.png', dpi=1000)
 
 # f = open("result.txt", "w")
 # f.write(str(eig))
