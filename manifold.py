@@ -4,6 +4,13 @@ import sklearn.neighbors as sk
 import numpy as np
 from scipy.linalg import svd
 
+# формат self.oriented_frame_map[point_pos]:
+# [[x_11, ... , x_1p]
+#         ...
+#  [x_q1, ..., x_qp]]
+# где q = dim M - нашего многообразия
+# [x_1i, ..., x_qi] - собственный вектор, полученный после pca. Он же - вектор базиса в T_{x_i}(M)
+
 class manifold_data:
     def __init__(self, points, k, dim):
         self.points = copy.deepcopy(points)                                 # на вход ожидается np.array, иначе find_nearest_points не будет работать
@@ -23,12 +30,14 @@ class manifold_data:
     def get_point_pos_by_coordinates(self, coordinates):
         key = self.get_key(coordinates)
         return self.point_position_by_coordinates_hash_map[key]
-    
+
+    # и это тоже вынести в manifold_methods
     def find_nearest_points(self, point_pos):                               # поиск ближайших точек к точке, позиция которой передается в параметрах
         tree = sk.KDTree(self.points, leaf_size=2)
         ind = tree.query([self.points[point_pos]], k=self.k + 1)[1][0]      # API: на вход подается k - число ближайших соседей, KDTree ищет с учетом самой точки, а ее нужно исключить
         return ind[1:]
     
+    # отсюда все тоже вынести в manifold_methods
     def initialize_manifold_data(self):
         for point_pos in range(len(self.points)):
             self.k_ij[point_pos] = self.find_nearest_points(point_pos)
@@ -45,12 +54,57 @@ class manifold_data:
             pca_algorithm = pca(self.dim, closest_points_coordinates)
             self.oriented_frame_map[point_pos] = pca_algorithm.create_pca_frame()                               # а вот тут находим Q_pca(X_i) из статьи 
 
+    # Возвращает False - если многообразие неориентируемо
+    # Возвращает True - если ориентируемо (в обоих случаях меняет как-то ориентацию на фреймах
+    # но в случае ориентированного многообразия - ориентация уже задается на всем многообразии)
+    def set_orientation(self):                                                                                  # задаем ориентацию на многообразии на self.oriented_frame_map
+                                                                                                                # если ориентацию задать нельзя (многообразие неорентируемо),
+                                                                                                                # возвращаем "не ориентируемо"
+        # после того, как синхронизировали знак det(Q_i.T, Q_j) - сохраняем об этом информацию в словарь
+        # ключ - позиция точки. Значение - список позиций точек, с которыми синхронизировались уже
+        syncronised_points_map = {} 
+        # итерируемся по всем точкам (их позициям)
+        # и смотрим на знак det(Q_pca(X_i)^T \times Q_pca(X_j))
+        # где X_j - одна из "соседних точек", которые хранятся в self.k_ij[point_pos]
+        # если определитель меньше нуля - меняем ориентацию первого вектора в Q_pca(X_j) на противоположную 
+        # point_pos = i, self.oriented_frame_map(point_pos) = Q_pca(X_i)
+        # важный момент: при смене ориентации Q_pca(X_j), так же проверяем, что ничего не сломалось 
+        # среди всех det(X_j.T, X_k), где k - те точки, позиции которых уже синхронизированы с j (по сути просто проверяем непустоту словаря по ключу j - т.к. при смене 
+        # знака первого вектора в Q_pca_j мы автоматом сломаем все предудыщие синхронизации)
+        # (т.е. точки из syncronised_point_map[j])
+        # если что-то сломалось - многообразие неориентируемо (т.к. банально не сможем задать ориентацию на фреймах точек (point_pos, j, k) ничего не сломав)
+        # если ничего не сломалось - идем дальше
+        # по выходу из цикла многообразие ориентируемо (с ориентацией на фреймах) (т.к. не было таких "плохих" троек)
+        for point_pos in range(len(self.points)):
+            for j in self.k_ij[point_pos]:
+                if point_pos not in syncronised_points_map or j not in syncronised_points_map[point_pos]:       # синхронизируем только те пары, которые раньше не были синхронизированы
+                    Q_pca_i = self.oriented_frame_map[point_pos]
+                    Q_pca_j = self.oriented_frame_map[j]                                                        # для согласования с обозначениями в статье и для удобочитаемости
+                    det = np.linalg.det(np.matmul(Q_pca_i.T, Q_pca_j))
+                    if (det < 0):                                                                               # синхринизируем точки: меняем знак первого вектора в Q_pca_j, проверяем, что ничего не сломалось и добавляем инфу в синхр. мапу
+                        self.change_frame_orientation(j)                                                        # меняем ориентацию Q_pca_j 
+                        if j in syncronised_points_map:                                                         # значит, X_j уже синхронизирован с какой-то точкой. Значит, смена ориентации X_j разрушит прошлую синхронизацию
+                            ### ОТЛАДКА ###
+                            print("point_pos = " + str(point_pos))
+                            print("j = " + str(j))
+                            print("syncronised[j] = " + str(syncronised_points_map[j]))
+                            ### ОТЛАДКА ###
+                            return False                                                                        # многообразие неориентируемо
+                        syncronised_points_map[j] = [point_pos]                                                 # сюда доходим только если syncronised_points_map[j] был пустым, т.к. иначе - неориентируемо
+                        if point_pos not in syncronised_points_map:
+                            syncronised_points_map[point_pos] = []
+                        syncronised_points_map[point_pos].append(j)
+        return True
+
+    def change_frame_orientation(self, frame_pos):
+        for rows_pos in range(len(self.oriented_frame_map[frame_pos])):
+            self.oriented_frame_map[frame_pos][rows_pos][0] *= -1
+
 # класс для "больших" методов над многообразием
 # сейчас сюда добавляется только pca
 class manifold_methods:
     def __init__(self, manifold_data):
-        self.points = copy.deepcopy(manifold_data.points)                                                       # ожидаю, что manifold_methods и его наследники НЕ изменяют само многообразие, 
-                                                                                                                # а делают какие-то рассчеты с ним
+        self.manifold_data = manifold_data
 
 class pca(manifold_methods):
     def __init__(self, dim, nearest_points):

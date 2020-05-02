@@ -6,18 +6,18 @@ import numpy as np
 mean = [0, 0, 0]
 cov = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 seed = 0
-n = 100
+n = 500
 
 sample_on_sphere = points_on_sphere(mean, cov, n, seed)
 ### Конец генерации выборки
-k = 10
+k = 5
 dim = 2
 
 manifold = manifold_data(sample_on_sphere.points, k, dim)
 manifold.initialize_manifold_data()
 
-q_frame = manifold.oriented_frame_map[0]
-print(np.matmul(q_frame.T, q_frame))
+is_orientable = manifold.set_orientation()
+print(is_orientable)
 
 ### Ниже всякие тесты для отладки той или иной части функционала
 
