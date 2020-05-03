@@ -63,7 +63,7 @@ class manifold_data:
         # после того, как синхронизировали знак det(Q_i.T, Q_j) - сохраняем об этом информацию в словарь
         # ключ - позиция точки. Значение - список позиций точек, с которыми синхронизировались уже
         syncronised_points_map = {} 
-        # итерируемся по всем точкам (их позициям)
+        # итерируемся по соседям точки (фиксируем точки и начинаем синхронизировать фреймы у соседей)
         # и смотрим на знак det(Q_pca(X_i)^T \times Q_pca(X_j))
         # где X_j - одна из "соседних точек", которые хранятся в self.k_ij[point_pos]
         # если определитель меньше нуля - меняем ориентацию первого вектора в Q_pca(X_j) на противоположную 
@@ -75,25 +75,37 @@ class manifold_data:
         # если что-то сломалось - многообразие неориентируемо (т.к. банально не сможем задать ориентацию на фреймах точек (point_pos, j, k) ничего не сломав)
         # если ничего не сломалось - идем дальше
         # по выходу из цикла многообразие ориентируемо (с ориентацией на фреймах) (т.к. не было таких "плохих" троек)
-        for point_pos in range(len(self.points)):
-            for j in self.k_ij[point_pos]:
-                if point_pos not in syncronised_points_map or j not in syncronised_points_map[point_pos]:       # синхронизируем только те пары, которые раньше не были синхронизированы
-                    Q_pca_i = self.oriented_frame_map[point_pos]
-                    Q_pca_j = self.oriented_frame_map[j]                                                        # для согласования с обозначениями в статье и для удобочитаемости
-                    det = np.linalg.det(np.matmul(Q_pca_i.T, Q_pca_j))
-                    if (det < 0):                                                                               # синхринизируем точки: меняем знак первого вектора в Q_pca_j, проверяем, что ничего не сломалось и добавляем инфу в синхр. мапу
-                        self.change_frame_orientation(j)                                                        # меняем ориентацию Q_pca_j 
-                        if j in syncronised_points_map:                                                         # значит, X_j уже синхронизирован с какой-то точкой. Значит, смена ориентации X_j разрушит прошлую синхронизацию
-                            ### ОТЛАДКА ###
-                            print("point_pos = " + str(point_pos))
-                            print("j = " + str(j))
-                            print("syncronised[j] = " + str(syncronised_points_map[j]))
-                            ### ОТЛАДКА ###
-                            return False                                                                        # многообразие неориентируемо
-                        syncronised_points_map[j] = [point_pos]                                                 # сюда доходим только если syncronised_points_map[j] был пустым, т.к. иначе - неориентируемо
-                        if point_pos not in syncronised_points_map:
-                            syncronised_points_map[point_pos] = []
-                        syncronised_points_map[point_pos].append(j)
+        points_on_syncronised_path = [0]
+        met_points_map = {}
+        for point_pos in points_on_syncronised_path:
+            if point_pos not in met_points_map:
+                for j in self.k_ij[point_pos]:
+                    if point_pos not in syncronised_points_map or j not in syncronised_points_map[point_pos]:       # синхронизируем только те пары, которые раньше не были синхронизированы
+                        Q_pca_i = self.oriented_frame_map[point_pos]
+                        Q_pca_j = self.oriented_frame_map[j]                                                        # для согласования с обозначениями в статье и для удобочитаемости
+                        det = np.linalg.det(np.matmul(Q_pca_i.T, Q_pca_j))
+                        if (det < 0):                                                                               # синхринизируем точки: меняем знак первого вектора в Q_pca_j, проверяем, что ничего не сломалось и добавляем инфу в синхр. мапу
+                            self.change_frame_orientation(j)                                                        # меняем ориентацию Q_pca_j 
+                            if j in syncronised_points_map:                                                         # значит, X_j уже синхронизирован с какой-то точкой. Значит, смена ориентации X_j разрушит прошлую синхронизацию
+                                ### ОТЛАДКА ###
+                                print(met_points_map)
+                                print("point_pos = " + str(point_pos))
+                                print("j = " + str(j))
+                                print("syncronised[j] = " + str(syncronised_points_map[j]))
+                                print("уже синхронизированы:")
+                                for key in met_points_map.keys():
+                                    print("key = " + str(key) + ", соседи = " + str(self.k_ij[key]))
+                                print("в процессе:")
+                                print("key = " + str(point_pos) + ", соседи = " + str(self.k_ij[point_pos]))
+                                ### ОТЛАДКА ###
+                                return False                                                                        # многообразие неориентируемо
+                            syncronised_points_map[j] = [point_pos]                                                 # сюда доходим только если syncronised_points_map[j] был пустым, т.к. иначе - неориентируемо
+                            if point_pos not in syncronised_points_map:
+                                syncronised_points_map[point_pos] = []
+                            syncronised_points_map[point_pos].append(j)
+                    if j not in met_points_map:
+                        points_on_syncronised_path.append(j)
+                met_points_map[point_pos] = True
         return True
 
     def change_frame_orientation(self, frame_pos):
