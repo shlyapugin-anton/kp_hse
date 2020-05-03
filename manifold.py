@@ -86,19 +86,23 @@ class manifold_data:
                         det = np.linalg.det(np.matmul(Q_pca_i.T, Q_pca_j))
                         if (det < 0):                                                                               # синхринизируем точки: меняем знак первого вектора в Q_pca_j, проверяем, что ничего не сломалось и добавляем инфу в синхр. мапу
                             self.change_frame_orientation(j)                                                        # меняем ориентацию Q_pca_j 
-                            if j in syncronised_points_map:                                                         # значит, X_j уже синхронизирован с какой-то точкой. Значит, смена ориентации X_j разрушит прошлую синхронизацию
-                                ### ОТЛАДКА ###
-                                print(met_points_map)
-                                print("point_pos = " + str(point_pos))
-                                print("j = " + str(j))
-                                print("syncronised[j] = " + str(syncronised_points_map[j]))
-                                print("уже синхронизированы:")
-                                for key in met_points_map.keys():
-                                    print("key = " + str(key) + ", соседи = " + str(self.k_ij[key]))
-                                print("в процессе:")
-                                print("key = " + str(point_pos) + ", соседи = " + str(self.k_ij[point_pos]))
-                                ### ОТЛАДКА ###
-                                return False                                                                        # многообразие неориентируемо
+                            if j in syncronised_points_map:                                                         
+                                for k in syncronised_points_map[j]:
+                                    Q_pca_k = self.oriented_frame_map[k]
+                                    det_jk = np.linalg.det(np.matmul(Q_pca_j.T, Q_pca_k))
+                                    if det_jk < 0:
+                                        ### ОТЛАДКА ###
+                                        print(met_points_map)
+                                        print("point_pos = " + str(point_pos))
+                                        print("j = " + str(j))
+                                        print("syncronised[j] = " + str(syncronised_points_map[j]))
+                                        print("уже синхронизированы:")
+                                        for key in met_points_map.keys():
+                                            print("key = " + str(key) + ", соседи = " + str(self.k_ij[key]))
+                                        print("в процессе:")
+                                        print("key = " + str(point_pos) + ", соседи = " + str(self.k_ij[point_pos]))
+                                        ### ОТЛАДКА ###
+                                        return False                                                                # многообразие неориентируемо
                             syncronised_points_map[j] = [point_pos]                                                 # сюда доходим только если syncronised_points_map[j] был пустым, т.к. иначе - неориентируемо
                             if point_pos not in syncronised_points_map:
                                 syncronised_points_map[point_pos] = []

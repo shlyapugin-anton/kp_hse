@@ -8,11 +8,11 @@ start_time = time.time()
 mean = [0, 0, 0]
 cov = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 seed = 1
-n = 800
+n = 2000
 
 sample_on_sphere = points_on_sphere(mean, cov, n, seed)
 ### Конец генерации выборки
-k = 6
+k = 10
 dim = 2
 
 manifold = manifold_data(sample_on_sphere.points, k, dim)
