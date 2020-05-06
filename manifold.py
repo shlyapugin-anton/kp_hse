@@ -20,6 +20,14 @@ class manifold_data:
         self.k = k
         self.dim = dim
 
+    def get_distance(self, i, j):                                           # рассчитываем расстояние между двумя точками
+        x_i = self.points[i]
+        x_j = self.points[j]
+        distance = 0
+        for coordinate_pos in range(len(x_i)):
+            distance = distance + (x_i[coordinate_pos] - x_j[coordinate_pos]) ** 2
+        return distance ** 0.5
+
     def get_key(self, coordinates):                                         # Рассчитывает хэш по списку координат. Необходим для доступа к позиции точки по ее координатам
         strRepresentation = ''
         for axis in coordinates:
@@ -35,7 +43,13 @@ class manifold_data:
     def find_nearest_points(self, point_pos):                               # поиск ближайших точек к точке, позиция которой передается в параметрах
         tree = sk.KDTree(self.points, leaf_size=2)
         ind = tree.query([self.points[point_pos]], k=self.k + 1)[1][0]      # API: на вход подается k - число ближайших соседей, KDTree ищет с учетом самой точки, а ее нужно исключить
-        return ind[1:]
+        ind = ind[1:]                                                       # предполагаемые соседи
+        result = []
+        for neighbour_pos in ind:
+            distance = self.get_distance(point_pos, neighbour_pos)
+            if distance < 10 ** (-2):                                       # 10 ** (-k) - потом перенести в настраиваемый параметр
+                result.append(neighbour_pos)
+        return result
     
     # отсюда все тоже вынести в manifold_methods
     def initialize_manifold_data(self):
@@ -52,7 +66,10 @@ class manifold_data:
                 closest_points_coordinates.append(self.points[point])                                           # а тут по индексам ближайших точек находим их координаты для 
                                                                                                                 # скармливания в pca
             pca_algorithm = pca(self.dim, closest_points_coordinates)
-            self.oriented_frame_map[point_pos] = pca_algorithm.create_pca_frame()                               # а вот тут находим Q_pca(X_i) из статьи 
+            if self.k_ij[point_pos] == []:
+                pass
+            else:
+                self.oriented_frame_map[point_pos] = pca_algorithm.create_pca_frame()                           # а вот тут находим Q_pca(X_i) из статьи 
 
     # Возвращает False - если многообразие неориентируемо
     # Возвращает True - если ориентируемо (в обоих случаях меняет как-то ориентацию на фреймах
@@ -110,6 +127,7 @@ class manifold_data:
                     if j not in met_points_map:
                         points_on_syncronised_path.append(j)
                 met_points_map[point_pos] = True
+        print(met_points_map)
         return True
 
     def change_frame_orientation(self, frame_pos):
@@ -126,7 +144,7 @@ class pca(manifold_methods):
     def __init__(self, dim, nearest_points):
 #        super().__init__(manifold_data)                                                                        # сейчас этот код не нужен, т.к. для pca не нужны ВСЕ точки
         self.dim = dim
-        self.nearest_points = nearest_points
+        self.nearest_points = copy.deepcopy(nearest_points)
         self.operator = ''
 
     def centralize_date(self):                                                                                  # нормализуем данные
