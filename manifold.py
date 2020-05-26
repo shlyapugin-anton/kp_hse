@@ -3,6 +3,7 @@ import copy
 import sklearn.neighbors as sk
 import numpy as np
 from scipy.linalg import svd
+import sklearn.decomposition as dcp
 
 # формат self.oriented_frame_map[point_pos]:
 # [[x_11, ... , x_1p]
@@ -19,6 +20,7 @@ class manifold_data:
         self.oriented_frame_map = {}                                        # словарь, по позиции точки возвращает Q_pca(X_i)
         self.k = k
         self.dim = dim
+        self.test_pca = {}
 
     def get_distance(self, i, j):                                           # рассчитываем расстояние между двумя точками
         x_i = self.points[i]
@@ -47,7 +49,7 @@ class manifold_data:
         result = []
         for neighbour_pos in ind:
             distance = self.get_distance(point_pos, neighbour_pos)
-            if distance < 10 ** (-2):                                       # 10 ** (-k) - потом перенести в настраиваемый параметр
+            if distance < 10 ** (-1) * 4:                                       # 10 ** (-k) - потом перенести в настраиваемый параметр
                 result.append(neighbour_pos)
         return result
     
@@ -69,7 +71,15 @@ class manifold_data:
             if self.k_ij[point_pos] == []:
                 pass
             else:
+                """
                 self.oriented_frame_map[point_pos] = pca_algorithm.create_pca_frame()                           # а вот тут находим Q_pca(X_i) из статьи 
+                self.test_pca[point_pos] = dcp.PCA(n_components=2)                                              # вообще говоря не находим, моя реализация pca дает не тот ответ
+                self.test_pca[point_pos].fit(closest_points_coordinates)                                        # применяю PCA из sklearn, комментарий оставляю, чтобы не забыть о некорректной реализации
+                self.test_pca[point_pos] = self.test_pca[point_pos].components_.T
+                """
+                self.oriented_frame_map[point_pos] = dcp.PCA(n_components=self.dim)
+                self.oriented_frame_map[point_pos].fit(closest_points_coordinates)
+                self.oriented_frame_map[point_pos] = self.oriented_frame_map[point_pos].components_.T
 
     # Возвращает False - если многообразие неориентируемо
     # Возвращает True - если ориентируемо (в обоих случаях меняет как-то ориентацию на фреймах
@@ -109,6 +119,7 @@ class manifold_data:
                                     det_jk = np.linalg.det(np.matmul(Q_pca_j.T, Q_pca_k))
                                     if det_jk < 0:
                                         ### ОТЛАДКА ###
+                                        """
                                         print(met_points_map)
                                         print("point_pos = " + str(point_pos))
                                         print("j = " + str(j))
@@ -118,6 +129,7 @@ class manifold_data:
                                             print("key = " + str(key) + ", соседи = " + str(self.k_ij[key]))
                                         print("в процессе:")
                                         print("key = " + str(point_pos) + ", соседи = " + str(self.k_ij[point_pos]))
+                                        """
                                         ### ОТЛАДКА ###
                                         return False                                                                # многообразие неориентируемо
                             syncronised_points_map[j] = [point_pos]                                                 # сюда доходим только если syncronised_points_map[j] был пустым, т.к. иначе - неориентируемо
@@ -127,7 +139,9 @@ class manifold_data:
                     if j not in met_points_map:
                         points_on_syncronised_path.append(j)
                 met_points_map[point_pos] = True
+        """
         print(met_points_map)
+        """
         return True
 
     def change_frame_orientation(self, frame_pos):
