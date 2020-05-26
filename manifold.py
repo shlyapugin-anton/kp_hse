@@ -21,6 +21,10 @@ class manifold_data:
         self.k = k
         self.dim = dim
         self.test_pca = {}
+        self.o_ij = {}                                                      # O_ij из статьи Orientable Diffusion Map. key - первая точка, value = {key: O_ij}, где во втором словаре key - вторая точка
+        self.z = []
+        self.d = []                                                         # оператор d из статьи ODM
+        self.reflection_operator = []                                       
 
     def get_distance(self, i, j):                                           # рассчитываем расстояние между двумя точками
         x_i = self.points[i]
@@ -29,6 +33,42 @@ class manifold_data:
         for coordinate_pos in range(len(x_i)):
             distance = distance + (x_i[coordinate_pos] - x_j[coordinate_pos]) ** 2
         return distance ** 0.5
+
+    def initialize_o_ij(self):
+        for i in range(len(self.points)):
+            neigh = self.k_ij[i]
+            for j in neigh:
+                if i not in self.o_ij:
+                    self.o_ij[i] = dict()
+                if j not in self.o_ij[i]:
+                    self.o_ij[i][j] = np.matmul(self.oriented_frame_map[i].T, self.oriented_frame_map[j])
+                    u, s, vt = svd(self.o_ij[i][j])
+                    self.o_ij[i][j] = np.matmul(u, vt)
+
+    def initialize_z(self):
+        for i in range(len(self.points)):
+            row_i = []
+            if i not in self.o_ij:
+                row_i = [0] * len(self.points)
+            else:
+                for j in range(len(self.points)):
+                    if j in self.o_ij[i]:
+                        row_i.append(np.linalg.det(self.o_ij[i][j]))
+                    else:
+                        row_i.append(0)
+            self.z.append(row_i)
+
+    def initialize_reversed_d(self):
+        diag = [0] * len(self.points)
+        for i in range(len(diag)):
+            result = 0
+            for j in range(len(diag)):
+                result = result + abs(self.z[i][j])
+            diag[i] = 1 / result
+        self.d = np.diag(diag)
+
+    def initialize_reflection_matrix(self):
+        self.reflection_operator = np.matmul(self.d, self.z)
 
     def get_key(self, coordinates):                                         # Рассчитывает хэш по списку координат. Необходим для доступа к позиции точки по ее координатам
         strRepresentation = ''

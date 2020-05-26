@@ -2,15 +2,21 @@ import samples
 from manifold import manifold_data
 import numpy as np
 import time
+from scipy.linalg import eigh
+from unidip import UniDip
+import seaborn as sns
+from scipy.sparse.linalg import eigs
+import matplotlib.pyplot as plt 
 
 # === ОБЩИЕ КОНСТАНТЫ ===
 mean = [0, 0, 0]
 cov = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 seed = 0
-n = 4000
+n = 5000
 dim = 2
-k = 10
-generate = "mobius"
+k = 100
+generate = "sphere"
+algorithm = "odm"
 # === КОНЕЦ СЕКЦИИ С ОБЩИМИ КОНСТАНТАМИ 
 
 start_time = time.time()
@@ -26,15 +32,32 @@ elif generate == "mobius":
 manifold = manifold_data(sample, k, dim)
 manifold.initialize_manifold_data()
 
-### === ОТЛАДКА === ###
-"""
-Q_0 = manifold.oriented_frame_map[0]
-Q_4 = manifold.oriented_frame_map[4]
-Q_287 = manifold.oriented_frame_map[287]
-product = np.matmul(Q_0.T, Q_0)
-print(product)
-"""
-### === КОНЕЦ ОТЛАДКИ === ###
+def find_maximum_pos(w):
+    max_pos = 0
+    max_val = w[0]
+    for val_pos in range(len(w)):
+        if w[val_pos] > max_val:
+            max_val = w[val_pos]
+            max_pos = val_pos
+    return max_pos
+
+if algorithm == "odm":
+    manifold.initialize_o_ij()
+    manifold.initialize_z()
+    manifold.initialize_reversed_d()
+    manifold.initialize_reflection_matrix()
+    # manifold.reflection_operator - оператор "Z красивая" из статьи по ODM
+    w, v = eigs(manifold.reflection_operator)
+    max_pos = find_maximum_pos(w)
+    v[max_pos] = v[max_pos].real
+    plt.hist(v[max_pos])
+    plt.show()
+    """
+    svm = sns.distplot(v[max_pos].real)
+    figure = svm.get_figure()
+    figure.savefig('svm_2.png', dpi=4000)
+    """
+#    print(v[0])
 
 is_orientable = manifold.set_orientation()
 print(is_orientable)
