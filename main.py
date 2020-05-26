@@ -1,22 +1,29 @@
-from samples import points_on_sphere
+import samples
 from manifold import manifold_data
 import numpy as np
 import time
 
-start_time = time.time()
-### Генерация выборки
+# === ОБЩИЕ КОНСТАНТЫ ===
 mean = [0, 0, 0]
 cov = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 seed = 0
 n = 4000
-
-sample_on_sphere = points_on_sphere(mean, cov, n, seed)
-sample_on_sphere.normalize_points_set()
-### Конец генерации выборки
-k = 4
 dim = 2
+k = 10
+generate = "mobius"
+# === КОНЕЦ СЕКЦИИ С ОБЩИМИ КОНСТАНТАМИ 
 
-manifold = manifold_data(sample_on_sphere.points, k, dim)
+start_time = time.time()
+### Генерация выборки на сфере
+sample = samples.samples()
+if generate == "sphere":
+    sample = sample.generate_point_on_sphere(mean, cov, n, seed)
+elif generate == "mobius":
+    sample = sample.generate_point_on_mobius(n, seed)
+### Конец генерации выборки
+
+
+manifold = manifold_data(sample, k, dim)
 manifold.initialize_manifold_data()
 
 ### === ОТЛАДКА === ###

@@ -139,9 +139,7 @@ class manifold_data:
                     if j not in met_points_map:
                         points_on_syncronised_path.append(j)
                 met_points_map[point_pos] = True
-        """
-        print(met_points_map)
-        """
+#        print(met_points_map)
         return True
 
     def change_frame_orientation(self, frame_pos):
