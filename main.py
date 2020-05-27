@@ -7,6 +7,7 @@ from unidip import UniDip
 import seaborn as sns
 from scipy.sparse.linalg import eigs
 import matplotlib.pyplot as plt 
+from unidip import UniDip
 
 # === ОБЩИЕ КОНСТАНТЫ ===
 mean = [0, 0, 0]
@@ -15,7 +16,7 @@ seed = 0
 n = 5000
 dim = 2
 k = 100
-generate = "sphere"
+generate = "mobius"
 algorithm = "odm"
 # === КОНЕЦ СЕКЦИИ С ОБЩИМИ КОНСТАНТАМИ 
 
@@ -50,6 +51,10 @@ if algorithm == "odm":
     w, v = eigs(manifold.reflection_operator)
     max_pos = find_maximum_pos(w)
     v[max_pos] = v[max_pos].real
+
+    intervals = UniDip(v[max_pos]).run()
+    print(intervals)
+
     plt.hist(v[max_pos])
     plt.show()
     """
@@ -58,11 +63,11 @@ if algorithm == "odm":
     figure.savefig('svm_2.png', dpi=4000)
     """
 #    print(v[0])
-
-is_orientable = manifold.set_orientation()
-print(is_orientable)
-end_time = time.time()
-print("рассчеты заняли времени: " + str(end_time - start_time))
+else:                                               # сейчас только 2 алгоритма: ODM и из статьи Estimation of smooth vector fields
+    is_orientable = manifold.set_orientation()
+    print(is_orientable)
+    end_time = time.time()
+    print("рассчеты заняли времени: " + str(end_time - start_time))
 ### Ниже всякие тесты для отладки той или иной части функционала
 
 ### manifold.find_nearest
